@@ -1,0 +1,16 @@
+{
+  "name": "fireball-server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "start": "node src/app.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@types/socket.io": "^2.1.12",
+    "express": "^4.17.1",
+    "socket.io": "^2.2.4"
+  }
+}
