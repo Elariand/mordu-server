@@ -13,32 +13,33 @@ io.on('connection', (socket) => {
   let previousId;
   const safeJoin = (currentId) => {
     console.log('safeJoin');
-    // socket.leave(previousId);
-    // socket.join(currentId);
-    // previousId = currentId;
+    socket.leave(previousId);
+    socket.join(currentId);
+    previousId = currentId;
   };
 
   socket.on('get', (id) => {
     console.log('get');
-    // safeJoin(id);
-    // socket.emit('board', boards[id]);
+    safeJoin(id);
+    socket.emit('board', boards[id]);
   });
 
   socket.on("add", b => {
-    console.log('add');
-    // boards[b.id] = b;
-    // safeJoin(b.id);
-    // io.emit("boards", Object.keys(boards));
-    // socket.emit("board", b);
+    console.log('add; your hand is:', b.hand.map(c => c.name));
+    boards[b.id] = b;
+    safeJoin(b.id);
+    io.emit("boards", Object.keys(boards));
+    socket.emit("board", b);
   });
 
   socket.on("edit", b => {
     console.log('edit');
-    // boards[b.id] = b;
+    boards[b.id] = b;
     // socket.to(b.id).emit("board", b);
+    socket.emit("board", b);
   });
 
-  // io.emit('boards', Object.keys(boards));
+  io.emit('boards', Object.keys(boards));
 
   console.log(`Socket ${socket.id} has connected`);
 });
