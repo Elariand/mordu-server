@@ -20,14 +20,18 @@ io.on('connection', (socket) => {
       'Dark',
       'Divine',
       'Half',
+      'Headless',
+      'Sneaky'
     ];
     const noms = [
       'Unicorn',
+      'Kitten',
       'Mage',
       'Troll',
       'Goblin',
       'Genuis',
       'Asshole',
+      'Dickhead',
       'Elf',
       'Dwarf',
     ];
