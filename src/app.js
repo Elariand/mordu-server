@@ -53,12 +53,7 @@ io.on('connection', (socket) => {
     b.player.id = socket.id;
     b.player.name = b.player.name ? b.player.name : generateName();
 
-    console.log(
-      'Welcome',
-      b.player.name,
-      '! Your hand is:',
-      b.hand.map((c) => c.name)
-    );
+    console.log('Welcome', b.player.name);
     boards[socket.id] = b;
 
     //io emits to all users
@@ -73,12 +68,9 @@ io.on('connection', (socket) => {
     //io emits to all users
     io.emit('boards', Object.values(boards));
   });
-  
+
   socket.on('target', ({ cardID, playerID }) => {
-    console.log('targetting', cardID, playerID);
-    // const found = boards.find((b) => b.player.id == playerID);
     if (boards[playerID]) {
-      console.log('targetting found');
       const targetIndex = boards[playerID].targettedCards.findIndex(
         (CID) => CID == cardID
       );
@@ -90,7 +82,7 @@ io.on('connection', (socket) => {
       io.emit('boards', Object.values(boards));
     }
   });
-  
+
   socket.on('disconnect', function () {
     console.log('Got disconnect!');
     if (boards[socket.id]) delete boards[socket.id];
@@ -99,6 +91,7 @@ io.on('connection', (socket) => {
     io.emit('boards', Object.values(boards));
   });
 
+  //io emits to all users
   io.emit('boards', Object.values(boards));
 
   console.log(`Socket ${socket.id} has connected`);
