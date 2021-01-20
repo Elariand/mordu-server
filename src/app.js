@@ -71,6 +71,9 @@ io.on('connection', (socket) => {
   socket.on('disconnect', function () {
     console.log('Got disconnect!');
     if (boards[socket.id]) delete boards[socket.id];
+
+    //io emits to all users
+    io.emit('boards', Object.values(boards));
   });
 
   io.emit('boards', Object.values(boards));
