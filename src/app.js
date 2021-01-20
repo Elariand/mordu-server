@@ -7,6 +7,10 @@ const io = require('socket.io')(http, {
   }
 });
 
+setInterval(() => {
+  io.emit('time', new Date().toTimeString());
+}, 1000);
+
 const boards = {};
 
 io.on('connection', (socket) => {
@@ -81,6 +85,10 @@ io.on('connection', (socket) => {
   console.log(`Socket ${socket.id} has connected`);
 });
 
-http.listen(4444, () => {
-  console.log('Listening on port 4444');
+http.listen(process.env.PORT || 4444, () => {
+  console.log(
+    'Listening on port %d in %s mode',
+    process.env.PORT || 4444,
+    app.settings.env
+  );
 });
