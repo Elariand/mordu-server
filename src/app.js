@@ -11,7 +11,7 @@ setInterval(() => {
   io.emit('time', new Date().toTimeString());
 }, 1000);
 
-const boards = [];
+const boards = {};
 
 io.on('connection', (socket) => {
   const generateName = () => {
@@ -50,6 +50,7 @@ io.on('connection', (socket) => {
   };
 
   socket.on('add', (b) => {
+    b.player.id = socket.id;
     b.player.name = b.player.name ? b.player.name : generateName();
 
     console.log(
@@ -67,21 +68,26 @@ io.on('connection', (socket) => {
   });
 
   socket.on('edit', (b) => {
-    console.log('edit');
     boards[socket.id] = b;
 
     //io emits to all users
     io.emit('boards', Object.values(boards));
   });
+  
+  socket.on('target', ({ cardID, playerID }) => {
+    console.log('targetting', cardID, playerID);
+    // const found = boards.find((b) => b.player.id == playerID);
+    if (boards[playerID]) {
+      console.log('targetting found');
+      const targetIndex = boards[playerID].targettedCards.findIndex(
+        (CID) => CID == cardID
+      );
+      targetIndex >= 0
+        ? boards[playerID].targettedCards.splice(targetIndex, 1)
+        : boards[playerID].targettedCards.push(cardID);
 
-  socket.on('target', (card, board) => {
-    const found = Object.values(boards).find((b) => b == board);
-    if (found) {
-      const targetIndex = found.targettedCard.findIndex(
-        (CID) => CID == card.id
-      )(targetIndex >= 0)
-        ? found.targettedCard.splice(targetIndex, 1)
-        : found.targettedCard.push(card.id);
+      //io emits to all users
+      io.emit('boards', Object.values(boards));
     }
   });
   
