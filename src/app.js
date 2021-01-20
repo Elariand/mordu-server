@@ -25,7 +25,8 @@ io.on('connection', (socket) => {
       'Divine',
       'Half',
       'Headless',
-      'Sneaky'
+      'Sneaky',
+      'A Fucking',
     ];
     const noms = [
       'Unicorn',
@@ -38,11 +39,12 @@ io.on('connection', (socket) => {
       'Dickhead',
       'Elf',
       'Dwarf',
+      'Goat',
     ];
 
     return (
       adjs[Math.floor(Math.random() * adjs.length)] +
-      '' +
+      ' ' +
       noms[Math.floor(Math.random() * noms.length)]
     );
   };
