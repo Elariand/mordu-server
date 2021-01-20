@@ -11,7 +11,7 @@ setInterval(() => {
   io.emit('time', new Date().toTimeString());
 }, 1000);
 
-const boards = {};
+const boards = [];
 
 io.on('connection', (socket) => {
   const generateName = () => {
@@ -72,6 +72,17 @@ io.on('connection', (socket) => {
 
     //io emits to all users
     io.emit('boards', Object.values(boards));
+  });
+
+  socket.on('target', (card, board) => {
+    const found = Object.values(boards).find((b) => b == board);
+    if (found) {
+      const targetIndex = found.targettedCard.findIndex(
+        (CID) => CID == card.id
+      )(targetIndex >= 0)
+        ? found.targettedCard.splice(targetIndex, 1)
+        : found.targettedCard.push(card.id);
+    }
   });
   
   socket.on('disconnect', function () {
