@@ -30,17 +30,19 @@ io.on('connection', (socket) => {
     socket.emit('turn', cm.GETPLAYERID(playersTurn));
   });
 
-  socket.on('draw', () => {
-    cm.DRAW(socket.id);
-    //io emits to all users
-    io.emit('board', cm.GET());
+  socket.on('draw', (fromGrave) => {
+    if (cm.GETPLAYERID(playersTurn) == socket.id) {
+      cm.DRAW(socket.id, fromGrave);
+      //io emits to all users
+      io.emit('board', cm.GET());
+    } else socket.emit('error', "Ce n'est pas votre tour !");
   });
 
-  socket.on('switch', ({ currentCard, newCard }) => {
-    cm.SWITCH(socket.id, currentCard, newCard);
-    //io emits to all users
-    io.emit('board', cm.GET());
-  });
+  // socket.on('switch', ({ currentCard, newCard }) => {
+  //   cm.SWITCH(socket.id, currentCard, newCard);
+  //   //io emits to all users
+  //   io.emit('board', cm.GET());
+  // });
 
   socket.on('play', (card) => {
     cm.PLAY(socket.id, card);

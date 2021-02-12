@@ -7,7 +7,10 @@ let PLAYGROUND = {
 module.exports = {
   GET: () => PLAYGROUND,
   GETNBPLAYERS: () => PLAYGROUND.players.length,
-  GETPLAYERID: (pPos) => (pPos >= 0 && PLAYGROUND.players.length > pPos) ? PLAYGROUND.players[pPos].id : null,
+  GETPLAYERID: (pPos) =>
+    pPos >= 0 && PLAYGROUND.players.length > pPos
+      ? PLAYGROUND.players[pPos].id
+      : null,
 
   LOGHAND: function (playerID) {
     const player = getPlayerById(playerID);
@@ -57,42 +60,39 @@ module.exports = {
     }
   },
 
-  DRAW: function (playerID) {
+  DRAW: function (playerID, fromGrave) {
     const player = getPlayerById(playerID);
     // YOU CAN'T DRAW ANOTHER CARD IF YOU ALREADY HAVE
     if (player.revealedCards.length > 0) return;
-    
-    MOVECARD(PLAYGROUND.deck, player.revealedCards);
-  },
 
-  SWITCH: function (playerID, currentCard, newCard) {
-    const player = getPlayerById(playerID);
-
-    let position = this.PLAY(playerID, currentCard);
-
-    const index = player.revealedCards.findIndex(
-      (c) => c.id == newCard.id
-    );
-    if (index >= 0) {
-      MOVECARD(
-        player.revealedCards,
-        player.hand,
-        newCard.id,
-        position
-      );
+    if (fromGrave && PLAYGROUND.grave.length) {
+      // take from grave
+      const lastGraveCard = PLAYGROUND.grave[PLAYGROUND.grave.length - 1];
+      MOVECARD(PLAYGROUND.grave, player.revealedCards, lastGraveCard.id)
     } else {
-      MOVECARD(
-        player.grave,
-        player.hand,
-        newCard.id,
-        position
-      );
+      // take from deck
+      MOVECARD(PLAYGROUND.deck, player.revealedCards);
     }
-    emptyReveals(playerID);
   },
+
+  // SWITCH: function (playerID, currentCard, newCard) {
+  //   const player = getPlayerById(playerID);
+
+  //   let pos = this.PLAY(playerID, currentCard);
+
+  //   const index = player.revealedCards.findIndex((c) => c.id == newCard.id);
+  //   if (index >= 0) {
+  //     MOVECARD(player.revealedCards, player.hand, newCard.id, pos);
+  //   } else {
+  //     MOVECARD(PLAYGROUND.grave, player.hand, newCard.id, pos);
+  //   }
+  //   emptyReveals(playerID);
+  // },
 
   PLAY: function (playerID, card) {
+    let pos = null;
     const player = getPlayerById(playerID);
+    if (!player) return;
 
     if (card.name[0] >= '0' && card.name[0] <= '9') {
       // NO EFFECTS
@@ -100,18 +100,39 @@ module.exports = {
       // EFFECT
     }
 
-    // if (player.revealedCards.length > 0) {
-    const targetIndex = player.revealedCards.findIndex(
-      (c) => c.id == card.id
-    );
-    // console.log('CARD', targetIndex >= 0 ? '' : 'NOT', 'found in reveals');
-    const source =
-      targetIndex >= 0
-        ? player.revealedCards
-        : player.hand;
-    const position = MOVECARD(source, PLAYGROUND.grave, card.id);
+    if (player.revealedCards.length > 0) {
+      // The player is in draw phase
+      const targetIndex = player.revealedCards.findIndex(
+        (c) => c.id == card.id
+      );
 
-    return position;
+      if (targetIndex >= 0) {
+        // discard the drawn card
+        MOVECARD(player.revealedCards, PLAYGROUND.grave, card.id);
+      } else {
+        // keep the drawn card and discard one of its hand
+        pos = MOVECARD(player.hand, PLAYGROUND.grave, card.id);
+        MOVECARD(player.revealedCards, player.hand, null, pos);
+      }
+
+      emptyReveals(playerID);
+
+    } else if (noPlayerIsDrawing()) {
+      // The player is NOT in draw phase and NO ONE IS
+      // he wants to play the same card as the shown card
+      if (PLAYGROUND.grave.length) {
+        const lastGraveCard = PLAYGROUND.grave[PLAYGROUND.grave.length - 1];
+        if (cardsMatch(card, lastGraveCard)) {
+          // card matches to the one on the grave
+          MOVECARD(player.hand, PLAYGROUND.grave, card.id);
+        } else {
+          // card doesn't match
+          MOVECARD(PLAYGROUND.grave, player.hand, lastGraveCard.id);
+        }
+      }
+    }
+
+    return pos;
   },
 };
 
@@ -119,12 +140,12 @@ module.exports = {
 // PRIVATE FUNCTIONS //
 ///////////////////////
 
-const MOVECARD = (source, destination, cardID = null, position = null) => {
+const MOVECARD = (source, destination, cardID = null, pos = null) => {
   const cardIndexToMove = cardID ? source.findIndex((c) => c.id === cardID) : 0;
   const cardMoved = source.splice(cardIndexToMove, 1);
   if (cardMoved && cardMoved[0]) {
-    position != null
-      ? destination.splice(position, 0, cardMoved[0])
+    pos != null
+      ? destination.splice(pos, 0, cardMoved[0])
       : destination.push(cardMoved[0]);
   }
   return cardIndexToMove;
@@ -134,11 +155,7 @@ const emptyReveals = (playerID) => {
   const player = getPlayerById(playerID);
 
   player.revealedCards.forEach((card) =>
-    MOVECARD(
-      player.revealedCards,
-      PLAYGROUND.deck,
-      card.id
-    )
+    MOVECARD(player.revealedCards, PLAYGROUND.deck, card.id)
   );
 };
 
@@ -172,6 +189,19 @@ const buildDeck = () => {
 
 const getPlayerById = (playerID) => {
   const playerIndex = PLAYGROUND.players.findIndex((p) => p.id == playerID);
-  if (playerIndex >= 0) return PLAYGROUND.players[playerIndex]
+  if (playerIndex >= 0) return PLAYGROUND.players[playerIndex];
   else return null;
+};
+
+const cardsMatch = (cardA, cardB) => {
+  firstNbMatch = cardA.name[0] == cardB.name[0];
+  return firstNbMatch && cardA.name[0] == '1'
+    ? cardA.name[1] == cardB.name[1]
+    : firstNbMatch;
+};
+
+const noPlayerIsDrawing = () => {
+  let nobody = true;
+  PLAYGROUND.players.forEach(p => { if (p.revealedCards.length > 0) nobody = false; });
+  return nobody;
 }
