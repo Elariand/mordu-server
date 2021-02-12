@@ -71,6 +71,7 @@ module.exports = {
       MOVECARD(PLAYGROUND.grave, player.revealedCards, lastGraveCard.id)
     } else {
       // take from deck
+      if (PLAYGROUND.deck.length == 0) fillDeck();
       MOVECARD(PLAYGROUND.deck, player.revealedCards);
     }
   },
@@ -205,3 +206,10 @@ const noPlayerIsDrawing = () => {
   PLAYGROUND.players.forEach(p => { if (p.revealedCards.length > 0) nobody = false; });
   return nobody;
 }
+
+const fillDeck = () => {
+  if (PLAYGROUND.grave.length > 1) {
+    PLAYGROUND.deck = PLAYGROUND.grave.splice(0, PLAYGROUND.grave.length - 1);
+    this.SHUFFLE();
+  }
+};

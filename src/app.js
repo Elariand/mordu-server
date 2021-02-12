@@ -20,9 +20,9 @@ io.on('connection', (socket) => {
     console.log('Welcome', name);
     // players[socket.id] = name;
     cm.INITPLAYER(socket.id, name);
-    cm.INITPLAYER('zero', 'Zed');
-    cm.INITPLAYER('one', 'Yi');
-    cm.INITPLAYER('two', 'Shen');
+    // cm.INITPLAYER('zero', 'Zed');
+    // cm.INITPLAYER('one', 'Yi');
+    // cm.INITPLAYER('two', 'Shen');
     //io emits to all users
     io.emit('board', cm.GET());
     //socket emit to the user calling the event
@@ -35,7 +35,7 @@ io.on('connection', (socket) => {
       cm.DRAW(socket.id, fromGrave);
       //io emits to all users
       io.emit('board', cm.GET());
-    } else socket.emit('error', "Ce n'est pas votre tour !");
+    } else socket.emit('warning', "Ce n'est pas votre tour !");
   });
 
   // socket.on('switch', ({ currentCard, newCard }) => {
@@ -62,9 +62,9 @@ io.on('connection', (socket) => {
     console.log('Got disconnect!');
     // if (players[socket.id]) delete players[socket.id];
     cm.KICKPLAYER(socket.id);
-    cm.KICKPLAYER('zero');
-    cm.KICKPLAYER('one');
-    cm.KICKPLAYER('two');
+    // cm.KICKPLAYER('zero');
+    // cm.KICKPLAYER('one');
+    // cm.KICKPLAYER('two');
 
     //io emits to all users
     io.emit('board', cm.GET());
