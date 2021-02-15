@@ -16,13 +16,23 @@ let playersTurn = 0;
 
 io.on('connection', (socket) => {
   socket.on('add', (name) => {
-    cm.INITPLAYER(socket.id, name);
-    //io emits to all users
-    io.emit('board', cm.GET());
+    if (cm.INITPLAYER(socket.id, name)) {
+      io.emit('board', cm.GET());
+      socket.emit('recover', socket.id);
+    } else {
+      io.emit('board', cm.GET());
+      socket.emit('you', socket.id);
+    }
+
     //socket emit to the user calling the event
-    socket.emit('you', socket.id);
     socket.emit('turn', cm.GETPLAYERID(playersTurn));
   });
+
+  socket.on('reset', (id) => {
+    cm.RESETPLAYER(id);
+    //io emits to all users
+    io.emit('board', cm.GET());
+  })
 
   socket.on('draw', (fromGrave) => {
     if (cm.GETPLAYERID(playersTurn) == socket.id) {

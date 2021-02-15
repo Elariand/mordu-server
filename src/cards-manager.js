@@ -3,6 +3,7 @@ let PLAYGROUND = {
   grave: [],
   players: [],
 };
+let playersKicked = [];
 
 module.exports = {
   GET: () => PLAYGROUND,
@@ -31,32 +32,52 @@ module.exports = {
     const deckFormatted = [];
     const array = buildDeck();
     let i = 0;
-    // array.forEach((element) => {
-    //   deckFormatted.push({ id: i, name: element });
-    //   i++;
-    // });
+
     array.forEach((element) => deckFormatted.push({ id: i++, name: element }));
     PLAYGROUND = {
       deck: deckFormatted,
       grave: [],
       players: [],
     };
+    playersKicked = [];
     this.SHUFFLE();
   },
 
   INITPLAYER: function (playerID, playerName) {
-    PLAYGROUND.players.push({
-      id: playerID,
-      name: playerName,
-      hand: PLAYGROUND.deck.splice(0, 4),
-      revealedCards: [],
-    });
+    console.log('INIT PLAYER', playerID);
+    const player = playersKicked.find((p) => p.name == playerName);
+    if (player) {
+      player.id = playerID;
+      // recover lost player
+      PLAYGROUND.players.push(player);
+      return true;
+    } else {
+      PLAYGROUND.players.push({
+        id: playerID,
+        name: playerName,
+        hand: PLAYGROUND.deck.splice(0, 4),
+        revealedCards: [],
+      });
+    }
+    return false;
   },
 
   KICKPLAYER: function (playerID) {
+    console.log('KICK PLAYER', playerID);
     const playerIndex = PLAYGROUND.players.findIndex((p) => p.id == playerID);
     if (playerIndex >= 0) {
-      PLAYGROUND.players.splice(playerIndex, 1);
+      playersKicked.push(PLAYGROUND.players.splice(playerIndex, 1)[0]);
+    }
+  },
+
+  RESETPLAYER: function (playerID) {
+    console.log('RESET PLAYER', playerID);
+    const player = PLAYGROUND.players.find((p) => p.id == playerID);
+    if (player) {
+      PLAYGROUND.deck.push(player.hand.splice(0, player.hand.length));
+      PLAYGROUND.deck.push(player.revealedCards.splice(0, player.revealedCards.length));
+      player.hand = PLAYGROUND.deck.splice(0, 4);
+      player.revealedCards = [];
     }
   },
 
