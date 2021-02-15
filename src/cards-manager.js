@@ -68,7 +68,7 @@ module.exports = {
     if (fromGrave && PLAYGROUND.grave.length) {
       // take from grave
       const lastGraveCard = PLAYGROUND.grave[PLAYGROUND.grave.length - 1];
-      MOVECARD(PLAYGROUND.grave, player.revealedCards, lastGraveCard.id)
+      MOVECARD(PLAYGROUND.grave, player.revealedCards, lastGraveCard.id);
     } else {
       // take from deck
       if (PLAYGROUND.deck.length == 0) fillDeck();
@@ -91,15 +91,10 @@ module.exports = {
   // },
 
   PLAY: function (playerID, card) {
-    let pos = null;
     const player = getPlayerById(playerID);
-    if (!player) return;
+    if (!(player && card)) return;
 
-    if (card.name[0] >= '0' && card.name[0] <= '9') {
-      // NO EFFECTS
-    } else {
-      // EFFECT
-    }
+    const ev = playEffects(card);
 
     if (player.revealedCards.length > 0) {
       // The player is in draw phase
@@ -117,7 +112,6 @@ module.exports = {
       }
 
       emptyReveals(playerID);
-
     } else if (noPlayerIsDrawing()) {
       // The player is NOT in draw phase and NO ONE IS
       // he wants to play the same card as the shown card
@@ -133,7 +127,7 @@ module.exports = {
       }
     }
 
-    return pos;
+    return ev;
   },
 };
 
@@ -212,4 +206,12 @@ const fillDeck = () => {
     PLAYGROUND.deck = PLAYGROUND.grave.splice(0, PLAYGROUND.grave.length - 1);
     this.SHUFFLE();
   }
+};
+
+const playEffects = (card) => {
+  if (card.name[0] >= '0' && card.name[0] <= '9') {
+    // NO EFFECTS
+  }
+  if (card.name[0] == 'Q') return { name: 'reveal', factor: 1 };
+  return null;
 };

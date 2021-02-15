@@ -12,17 +12,11 @@ setInterval(() => {
   io.emit('time', new Date().toTimeString());
 }, 1000);
 
-// const players = {};
 let playersTurn = 0;
 
 io.on('connection', (socket) => {
   socket.on('add', (name) => {
-    console.log('Welcome', name);
-    // players[socket.id] = name;
     cm.INITPLAYER(socket.id, name);
-    // cm.INITPLAYER('zero', 'Zed');
-    // cm.INITPLAYER('one', 'Yi');
-    // cm.INITPLAYER('two', 'Shen');
     //io emits to all users
     io.emit('board', cm.GET());
     //socket emit to the user calling the event
@@ -38,14 +32,10 @@ io.on('connection', (socket) => {
     } else socket.emit('warning', "Ce n'est pas votre tour !");
   });
 
-  // socket.on('switch', ({ currentCard, newCard }) => {
-  //   cm.SWITCH(socket.id, currentCard, newCard);
-  //   //io emits to all users
-  //   io.emit('board', cm.GET());
-  // });
-
   socket.on('play', (card) => {
-    cm.PLAY(socket.id, card);
+    const ev = cm.PLAY(socket.id, card);
+    //socket emit to the user calling the event
+    if (ev) socket.emit(ev.name, ev.factor);
     //io emits to all users
     io.emit('board', cm.GET());
   });
@@ -54,18 +44,11 @@ io.on('connection', (socket) => {
     if (++playersTurn >= cm.GETNBPLAYERS()) playersTurn = 0;
     //io emits to all users
     io.emit('turn', cm.GETPLAYERID(playersTurn));
-
-    console.log("It's player", playersTurn, 'turn.');
   });
 
   socket.on('disconnect', function () {
     console.log('Got disconnect!');
-    // if (players[socket.id]) delete players[socket.id];
     cm.KICKPLAYER(socket.id);
-    // cm.KICKPLAYER('zero');
-    // cm.KICKPLAYER('one');
-    // cm.KICKPLAYER('two');
-
     //io emits to all users
     io.emit('board', cm.GET());
   });
@@ -88,12 +71,6 @@ http.listen(process.env.PORT || 4444, () => {
   // console.log(cm.GET());
   // cm.PLAY('yolo', cm.GET().players[0].revealedCards[0]);
   // console.log(cm.GET());
-  // console.log('hand', cm.LOGHAND('yolo'));
-  // cm.SWITCH(
-  //   'yolo',
-  //   cm.GET().players['yolo'].hand[1],
-  //   cm.GET().players['yolo'].revealedCards[0]
-  // );
   // console.log('hand', cm.LOGHAND('yolo'));
 });
 
