@@ -12,6 +12,7 @@ module.exports = {
     pPos >= 0 && PLAYGROUND.players.length > pPos
       ? PLAYGROUND.players[pPos].id
       : null,
+  GETPLAYERBYID: (playerID) => getPlayerById(playerID),
 
   LOGHAND: function (playerID) {
     const player = getPlayerById(playerID);
@@ -28,7 +29,7 @@ module.exports = {
     }
   },
 
-  INITPLAYGROUND: function () {
+  INITPLAYGROUND: function (keepPlayers = false) {
     const deckFormatted = [];
     const array = buildDeck();
     let i = 0;
@@ -37,10 +38,11 @@ module.exports = {
     PLAYGROUND = {
       deck: deckFormatted,
       grave: [],
-      players: [],
+      players: keepPlayers ? PLAYGROUND.players : [],
     };
     playersKicked = [];
     this.SHUFFLE();
+    giveCards();
   },
 
   INITPLAYER: function (playerID, playerName) {
@@ -75,7 +77,9 @@ module.exports = {
     const player = PLAYGROUND.players.find((p) => p.id == playerID);
     if (player) {
       PLAYGROUND.deck.push(player.hand.splice(0, player.hand.length));
-      PLAYGROUND.deck.push(player.revealedCards.splice(0, player.revealedCards.length));
+      PLAYGROUND.deck.push(
+        player.revealedCards.splice(0, player.revealedCards.length)
+      );
       player.hand = PLAYGROUND.deck.splice(0, 4);
       player.revealedCards = [];
     }
@@ -150,6 +154,16 @@ module.exports = {
 
     return ev;
   },
+
+  COUNTPOINTS: (playerID) => {
+    let scores = [];
+    PLAYGROUND.players.forEach((p) => {
+      let currentPlayerScore = 0;
+      p.hand.forEach((c) => (currentPlayerScore += cardPoints(c)));
+      scores.push({ name: p.name, score: currentPlayerScore });
+    });
+    return scores;
+  },
 };
 
 ///////////////////////
@@ -205,15 +219,11 @@ const buildDeck = () => {
 
 const getPlayerById = (playerID) => {
   const playerIndex = PLAYGROUND.players.findIndex((p) => p.id == playerID);
-  if (playerIndex >= 0) return PLAYGROUND.players[playerIndex];
-  else return null;
+  return playerIndex >= 0 ? PLAYGROUND.players[playerIndex] : null;
 };
 
 const cardsMatch = (cardA, cardB) => {
-  firstNbMatch = cardA.name[0] == cardB.name[0];
-  return firstNbMatch && cardA.name[0] == '1'
-    ? cardA.name[1] == cardB.name[1]
-    : firstNbMatch;
+  return extractCardValue(cardA) == extractCardValue(cardB);
 };
 
 const noPlayerIsDrawing = () => {
@@ -229,10 +239,26 @@ const fillDeck = () => {
   }
 };
 
+const giveCards = () => {
+  PLAYGROUND.players.forEach((player) => {
+    player.hand = PLAYGROUND.deck.splice(0, 4);
+    player.revealedCards = [];
+  });
+  MOVECARD(PLAYGROUND.deck, PLAYGROUND.grave);
+};
+
 const playEffects = (card) => {
   if (card.name[0] >= '0' && card.name[0] <= '9') {
     // NO EFFECTS
   }
   if (card.name[0] == 'Q') return { name: 'reveal', factor: 1 };
   return null;
+};
+
+const cardPoints = (card) => convertValueToPoints(extractCardValue(card));
+const extractCardValue = (card) =>
+  card.name[0] == '1' && card.name[1] == '0' ? '10' : card.name[0];
+const convertValueToPoints = (value) => {
+  const parsedValue = parseInt(value, 10);
+  return isNaN(parsedValue) ? 15 : parsedValue;
 };

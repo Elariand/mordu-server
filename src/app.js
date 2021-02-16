@@ -13,6 +13,7 @@ setInterval(() => {
 }, 1000);
 
 let playersTurn = 0;
+let playerClaimingVictory = { id: null, name: null };
 
 io.on('connection', (socket) => {
   socket.on('add', (name) => {
@@ -52,8 +53,29 @@ io.on('connection', (socket) => {
 
   socket.on('next', () => {
     if (++playersTurn >= cm.GETNBPLAYERS()) playersTurn = 0;
-    //io emits to all users
-    io.emit('turn', cm.GETPLAYERID(playersTurn));
+
+    const playerID = cm.GETPLAYERID(playersTurn);
+    if (playerID == playerClaimingVictory.id) {
+      io.emit('displayScores', cm.COUNTPOINTS(playerID));
+      playerClaimingVictory = { id: null, name: null };
+    } else io.emit('turn', playerID);
+  });
+
+  socket.on('claimVictory', () => {
+    const player = cm.GETPLAYERBYID(socket.id);
+    if (player != null) {
+      if (playerClaimingVictory.name == null) {
+        playerClaimingVictory = { id: socket.id, name: player.name };
+        io.emit('warning', player.name + ' annonce sa présumée victoire !');
+      } else {
+        socket.emit(
+          'warning',
+          playerClaimingVictory.name + ' a déjà annoncé avant toi !'
+        );
+      }
+    } else {
+      socket.emit('warning', 'Une erreur est survenue :/');
+    }
   });
 
   socket.on('disconnect', function () {
@@ -61,6 +83,9 @@ io.on('connection', (socket) => {
     cm.KICKPLAYER(socket.id);
     //io emits to all users
     io.emit('board', cm.GET());
+
+    if (playersTurn >= cm.GETNBPLAYERS()) playersTurn = 0;
+    io.emit('turn', cm.GETPLAYERID(playersTurn));
   });
 
   //io emits to all users
