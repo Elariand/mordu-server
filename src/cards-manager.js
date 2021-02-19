@@ -5,6 +5,13 @@ let PLAYGROUND = {
 };
 let playersKicked = [];
 
+let lastPlayed = {
+  card: { id: null, name: null },
+  wasPlayed: true,
+  playedBy: null,
+};
+
+
 module.exports = {
   GET: () => PLAYGROUND,
   GETNBPLAYERS: () => PLAYGROUND.players.length,
@@ -82,7 +89,7 @@ module.exports = {
       );
       player.hand = PLAYGROUND.deck.splice(0, 4);
       player.revealedCards = [];
-    }
+    } else console.log('didnt find player...');
   },
 
   DRAW: function (playerID, fromGrave) {
@@ -136,18 +143,33 @@ module.exports = {
         MOVECARD(player.revealedCards, player.hand, null, pos);
       }
 
+      lastPlayed.card = card;
+      lastPlayed.wasPlayed = false;
       emptyReveals(playerID);
     } else if (noPlayerIsDrawing()) {
       // The player is NOT in draw phase and NO ONE IS
       // he wants to play the same card as the shown card
-      if (PLAYGROUND.grave.length) {
-        const lastGraveCard = PLAYGROUND.grave[PLAYGROUND.grave.length - 1];
-        if (cardsMatch(card, lastGraveCard)) {
+      if (PLAYGROUND.grave.length && lastPlayed.card.name != null) {
+        // const lastGraveCard = PLAYGROUND.grave[PLAYGROUND.grave.length - 1];
+        if (cardsMatch(card, lastPlayed.card)) {
           // card matches to the one on the grave
-          MOVECARD(player.hand, PLAYGROUND.grave, card.id);
+          if (lastPlayed.WasPlayed && lastPlayed.playedBy != playerID) {
+            return {
+              name: 'warning',
+              factor:
+                'Vous ne pouvez plus jouer sur cette carte' +
+                " (quelqu'un vous a peut-être devancé)",
+            };
+          } else {
+            MOVECARD(player.hand, PLAYGROUND.grave, card.id);
+            lastPlayed.wasPlayed = true;
+            lastPlayed.playedBy = playerID;
+          }
         } else {
           // card doesn't match
-          MOVECARD(PLAYGROUND.grave, player.hand, lastGraveCard.id);
+          MOVECARD(PLAYGROUND.grave, player.hand, lastPlayed.card.id);
+          lastPlayed.wasPlayed = true;
+          lastPlayed.playedBy = null;
         }
       }
     }
@@ -228,9 +250,11 @@ const cardsMatch = (cardA, cardB) => {
 
 const noPlayerIsDrawing = () => {
   let nobody = true;
-  PLAYGROUND.players.forEach(p => { if (p.revealedCards.length > 0) nobody = false; });
+  PLAYGROUND.players.forEach((p) => {
+    if (p.revealedCards.length > 0) nobody = false;
+  });
   return nobody;
-}
+};
 
 const fillDeck = () => {
   if (PLAYGROUND.grave.length > 1) {

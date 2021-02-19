@@ -30,7 +30,8 @@ io.on('connection', (socket) => {
   });
 
   socket.on('reset', (id) => {
-    cm.RESETPLAYER(id);
+    cm.RESETPLAYER(id, socket.id);
+    socket.emit('you', socket.id);
     //io emits to all users
     io.emit('board', cm.GET());
   })
