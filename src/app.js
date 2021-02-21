@@ -17,13 +17,17 @@ let playerClaimingVictory = { id: null, name: null };
 
 io.on('connection', (socket) => {
   socket.on('add', (name) => {
+    cm.INITPLAYER('zed', 'zed');
+    cm.INITPLAYER('one', 'one');
+    cm.INITPLAYER('two', 'two');
+
     if (cm.INITPLAYER(socket.id, name)) {
       io.emit('board', cm.GET());
       socket.emit('recover', socket.id);
     } else {
       io.emit('board', cm.GET());
       socket.emit('you', socket.id);
-    }
+    }  
 
     //socket emit to the user calling the event
     socket.emit('turn', cm.GETPLAYERID(playersTurn));
@@ -82,6 +86,9 @@ io.on('connection', (socket) => {
   socket.on('disconnect', function () {
     console.log('Got disconnect!');
     cm.KICKPLAYER(socket.id);
+    cm.KICKPLAYER('zed');
+    cm.KICKPLAYER('one');
+    cm.KICKPLAYER('two');
     //io emits to all users
     io.emit('board', cm.GET());
 
