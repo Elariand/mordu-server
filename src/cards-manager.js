@@ -11,7 +11,6 @@ let lastPlayed = {
   playedBy: null,
 };
 
-
 module.exports = {
   GET: () => PLAYGROUND,
   GETNBPLAYERS: () => PLAYGROUND.players.length,
@@ -54,8 +53,11 @@ module.exports = {
 
   INITPLAYER: function (playerID, playerName) {
     console.log('INIT PLAYER', playerID);
-    const player = playersKicked.find((p) => p.name == playerName);
-    if (player) {
+    const kickedPlayerIndex = playersKicked.findIndex(
+      (p) => p.name == playerName
+    );
+    if (kickedPlayerIndex >= 0) {
+      let player = playersKicked.splice(kickedPlayerIndex, 1)[0];
       player.id = playerID;
       // recover lost player
       PLAYGROUND.players.push(player);
@@ -75,6 +77,13 @@ module.exports = {
     console.log('KICK PLAYER', playerID);
     const playerIndex = PLAYGROUND.players.findIndex((p) => p.id == playerID);
     if (playerIndex >= 0) {
+      // first remove the previous kicked player with the same name
+      const kickedPlayerIndex = playersKicked.findIndex(
+        (p) => p.name == PLAYGROUND.players[playerIndex]
+      );
+      if (kickedPlayerIndex >= 0) playersKicked.splice(kickedPlayerIndex, 1);
+
+      // then add a new kicked player
       playersKicked.push(PLAYGROUND.players.splice(playerIndex, 1)[0]);
     }
   },
@@ -83,10 +92,10 @@ module.exports = {
     console.log('RESET PLAYER', playerID);
     const player = PLAYGROUND.players.find((p) => p.id == playerID);
     if (player) {
-      PLAYGROUND.deck.push(player.hand.splice(0, player.hand.length));
-      PLAYGROUND.deck.push(
-        player.revealedCards.splice(0, player.revealedCards.length)
-      );
+      [
+        ...player.hand.splice(0, player.hand.length),
+        ...player.revealedCards.splice(0, player.revealedCards.length),
+      ].forEach((c) => PLAYGROUND.deck.push(c));
       player.hand = PLAYGROUND.deck.splice(0, 4);
       player.revealedCards = [];
     } else console.log('didnt find player...');
@@ -146,33 +155,29 @@ module.exports = {
       lastPlayed.card = card;
       lastPlayed.wasPlayed = false;
       emptyReveals(playerID);
-    } else if (noPlayerIsDrawing()) {
-      // The player is NOT in draw phase and NO ONE IS
+    } else if (PLAYGROUND.grave.length && lastPlayed.card.name != null) {
+      // The player is NOT in draw phase
       // he wants to play the same card as the shown card
-      if (PLAYGROUND.grave.length && lastPlayed.card.name != null) {
-        // const lastGraveCard = PLAYGROUND.grave[PLAYGROUND.grave.length - 1];
-        if (cardsMatch(card, lastPlayed.card)) {
-          // card matches to the one on the grave
-          if (lastPlayed.WasPlayed && lastPlayed.playedBy != playerID) {
-            return {
-              name: 'warning',
-              factor:
-                'Vous ne pouvez plus jouer sur cette carte' +
-                " (quelqu'un vous a peut-être devancé)",
-            };
-          } else {
-            MOVECARD(player.hand, PLAYGROUND.grave, card.id);
-            lastPlayed.wasPlayed = true;
-            lastPlayed.playedBy = playerID;
-          }
+      if (cardsMatch(card, lastPlayed.card)) {
+        // card matches to the one on the grave
+        if (lastPlayed.wasPlayed && lastPlayed.playedBy != playerID) {
+          return {
+            name: 'warning',
+            factor:
+              'Vous ne pouvez plus jouer sur cette carte' +
+              " (quelqu'un vous a peut-être devancé)",
+          };
         } else {
-          // card doesn't match
-          MOVECARD(PLAYGROUND.grave, player.hand, lastPlayed.card.id);
+          MOVECARD(player.hand, PLAYGROUND.grave, card.id);
           lastPlayed.wasPlayed = true;
-          lastPlayed.playedBy = null;
+          lastPlayed.playedBy = playerID;
         }
+      } else {
+        // card doesn't match
+        MOVECARD(PLAYGROUND.grave, player.hand, lastPlayed.card.id);
+        emptyLastPlayedCard();
       }
-    }
+    } else return; // nothing can be done : forbidden move
 
     return ev;
   },
@@ -209,6 +214,13 @@ const emptyReveals = (playerID) => {
   player.revealedCards.forEach((card) =>
     MOVECARD(player.revealedCards, PLAYGROUND.deck, card.id)
   );
+};
+const emptyLastPlayedCard = () => {
+  lastPlayed = {
+    card: { id: null, name: null },
+    wasPlayed: true,
+    playedBy: null,
+  };
 };
 
 const buildDeck = () => {
@@ -276,7 +288,7 @@ const playEffects = (card) => {
     // NO EFFECTS
   }
   if (card.name[0] == 'Q') return { name: 'reveal', factor: 1 };
-  return null;
+  return true;
 };
 
 const cardPoints = (card) => convertValueToPoints(extractCardValue(card));
