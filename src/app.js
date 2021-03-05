@@ -50,6 +50,11 @@ io.on('connection', (socket) => {
     if (ev) {
       socket.emit('showCard', card.id);
       if (ev.factor) socket.emit(ev.name, ev.factor);
+    } else {
+      socket.emit(
+        'warning',
+        "Il n'est pas possible de faire cette action maintenant"
+        );
     }
     //io emits to all users
     io.emit('board', cm.GET());
