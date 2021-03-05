@@ -174,8 +174,13 @@ module.exports = {
         }
       } else {
         // card doesn't match
-        MOVECARD(PLAYGROUND.grave, player.hand, lastPlayed.card.id);
+        const lastPlayedCardID = lastPlayed.card.id;
+        MOVECARD(PLAYGROUND.grave, player.hand, lastPlayedCardID);
         emptyLastPlayedCard();
+        return {
+          name: 'showCard',
+          factor: lastPlayedCardID,
+        };
       }
     } else return; // nothing can be done : forbidden move
 
