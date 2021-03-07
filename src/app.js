@@ -44,23 +44,39 @@ io.on('connection', (socket) => {
     } else socket.emit('warning', "Ce n'est pas votre tour !");
   });
 
-  socket.on('play', (card) => {
-    const ev = cm.PLAY(socket.id, card);
-    //socket emit to the user calling the event
+  socket.on('play', ({card, stealing}) => {
+    let shouldPassTurn = false;
+    // Handle pass turn
+    if (cm.GETPLAYERID(playersTurn) == socket.id && card.name != 'KS') {
+      const player = cm.GETPLAYERBYID(socket.id);
+      const hasRevealedCards = (player && player.revealedCards) ?
+      !!player.revealedCards.length
+      : false;
+      shouldPassTurn = (hasRevealedCards || stealing);
+    }
+    //
+
+    const ev = stealing ? 
+      cm.STEAL(socket.id, card)
+      : cm.PLAY(socket.id, card);
+
     if (ev) {
       socket.emit('showCard', card.id);
       if (ev.factor) socket.emit(ev.name, ev.factor);
+      if (shouldPassTurn) next();
     } else {
       socket.emit(
         'warning',
         "Il n'est pas possible de faire cette action maintenant"
-        );
+      );
     }
     //io emits to all users
     io.emit('board', cm.GET());
   });
 
-  socket.on('next', () => {
+  socket.on('next', () => next());
+
+  next = () => {
     if (++playersTurn >= cm.GETNBPLAYERS()) playersTurn = 0;
 
     const playerID = cm.GETPLAYERID(playersTurn);
@@ -68,7 +84,7 @@ io.on('connection', (socket) => {
       io.emit('displayScores', cm.COUNTPOINTS(playerID));
       playerClaimingVictory = { id: null, name: null };
     } else io.emit('turn', playerID);
-  });
+  }
 
   socket.on('claimVictory', () => {
     const player = cm.GETPLAYERBYID(socket.id);

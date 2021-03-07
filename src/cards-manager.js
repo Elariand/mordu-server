@@ -4,6 +4,7 @@ let PLAYGROUND = {
   players: [],
 };
 let playersKicked = [];
+let takenFromGrave = false;
 
 let lastPlayed = {
   card: { id: null, name: null },
@@ -106,7 +107,9 @@ module.exports = {
     // YOU CAN'T DRAW ANOTHER CARD IF YOU ALREADY HAVE
     if (player.revealedCards.length > 0) return;
 
-    if (fromGrave && PLAYGROUND.grave.length) {
+    takenFromGrave = fromGrave && PLAYGROUND.grave.length
+
+    if (takenFromGrave) {
       // take from grave
       const lastGraveCard = PLAYGROUND.grave[PLAYGROUND.grave.length - 1];
       MOVECARD(PLAYGROUND.grave, player.revealedCards, lastGraveCard.id);
@@ -117,25 +120,11 @@ module.exports = {
     }
   },
 
-  // SWITCH: function (playerID, currentCard, newCard) {
-  //   const player = getPlayerById(playerID);
-
-  //   let pos = this.PLAY(playerID, currentCard);
-
-  //   const index = player.revealedCards.findIndex((c) => c.id == newCard.id);
-  //   if (index >= 0) {
-  //     MOVECARD(player.revealedCards, player.hand, newCard.id, pos);
-  //   } else {
-  //     MOVECARD(PLAYGROUND.grave, player.hand, newCard.id, pos);
-  //   }
-  //   emptyReveals(playerID);
-  // },
-
   PLAY: function (playerID, card) {
     const player = getPlayerById(playerID);
     if (!(player && card)) return;
 
-    const ev = playEffects(card);
+    const ev = playEffects(card, player.hand.length);
 
     if (player.revealedCards.length > 0) {
       // The player is in draw phase
@@ -145,6 +134,7 @@ module.exports = {
 
       if (targetIndex >= 0) {
         // discard the drawn card
+        if (takenFromGrave) return; // nothing can be done : forbidden move
         MOVECARD(player.revealedCards, PLAYGROUND.grave, card.id);
       } else {
         // keep the drawn card and discard one of its hand
@@ -185,6 +175,24 @@ module.exports = {
     } else return; // nothing can be done : forbidden move
 
     return ev;
+  },
+
+  STEAL: function (playerID, card) {
+    const player = getPlayerById(playerID);
+    const opponent = PLAYGROUND.players.find(p => p.hand.find(c => c.id == card.id));
+    if (!(player && opponent)) return;
+
+    const notInterested = opponent.hand.find(
+      (c) => c.id == card.id
+    );
+
+    if (!notInterested) {
+      // keep the card and give one of its hand
+      pos = MOVECARD(player.hand, opponent.hand, card.id);
+      MOVECARD(opponent.hand, player.hand, null, pos);
+    }
+
+    return true;
   },
 
   COUNTPOINTS: (playerID) => {
@@ -288,17 +296,22 @@ const giveCards = () => {
   MOVECARD(PLAYGROUND.deck, PLAYGROUND.grave);
 };
 
-const playEffects = (card) => {
+const playEffects = (card, playerHandLength) => {
   if (card.name[0] >= '0' && card.name[0] <= '9') {
     // NO EFFECTS
   }
+  if (card.name == 'KC') return { name: 'reveal', factor: playerHandLength };
+  if (card.name == 'KS') return { name: 'steal', factor: 1 };
   if (card.name[0] == 'Q') return { name: 'reveal', factor: 1 };
   return true;
 };
 
 const cardPoints = (card) => convertValueToPoints(extractCardValue(card));
-const extractCardValue = (card) =>
-  card.name[0] == '1' && card.name[1] == '0' ? '10' : card.name[0];
+const extractCardValue = (card) => {
+  if (!card.name || card.name.length < 2) return 15;
+  if (card.name == 'KD' || card.name == 'KH') return 0;
+  return card.name[0] == '1' && card.name[1] == '0' ? '10' : card.name[0];
+}
 const convertValueToPoints = (value) => {
   const parsedValue = parseInt(value, 10);
   return isNaN(parsedValue) ? 15 : parsedValue;
