@@ -14,6 +14,7 @@ setInterval(() => {
 
 let playersTurn = 0;
 let playerClaimingVictory = { id: null, name: null };
+let playersRestart = [];
 
 io.on('connection', (socket) => {
   socket.on('add', (name) => {
@@ -103,14 +104,42 @@ io.on('connection', (socket) => {
     }
   });
 
+  socket.on('restart', () => {
+    const player = cm.GETPLAYERBYID(socket.id);
+    if (player != null) {
+      if (playersRestart.includes(socket.id)) {
+        io.emit('warning', 'Vous avez déjà annoncé vouloir rejouer');
+      } else {
+        socket.emit('warning', playerClaimingVictory.name + ' veut rejouer !');
+        playersRestart.push(socket.id);
+
+        if (playersRestart.length >= cm.GETNBPLAYERS()) {
+          cm.INITPLAYGROUND();
+          io.emit('board', cm.GET());
+          playersRestart = [];
+        }
+      }
+    } else {
+      socket.emit('warning', 'Une erreur est survenue :/');
+    }
+  });
+
   socket.on('disconnect', function () {
     console.log('Got disconnect!');
     cm.KICKPLAYER(socket.id);
     //io emits to all users
     io.emit('board', cm.GET());
 
+    // refresh players turn check
     if (playersTurn >= cm.GETNBPLAYERS()) playersTurn = 0;
     io.emit('turn', cm.GETPLAYERID(playersTurn));
+
+    // refresh play again check
+    if (playersRestart.length >= cm.GETNBPLAYERS()) {
+      cm.INITPLAYGROUND();
+      io.emit('board', cm.GET());
+      playersRestart = [];
+    }
   });
 
   //io emits to all users

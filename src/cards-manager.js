@@ -38,14 +38,23 @@ module.exports = {
 
   INITPLAYGROUND: function (keepPlayers = false) {
     const deckFormatted = [];
-    const array = buildDeck();
-    let i = 0;
+    const playersEmptied = keepPlayers
+      ? PLAYGROUND.players.map((p) => {
+          return {
+            id: p.id,
+            name: p.name,
+          };
+        })
+      : [];
 
-    array.forEach((element) => deckFormatted.push({ id: i++, name: element }));
+    let i = 0;
+    buildDeck().forEach((element) =>
+      deckFormatted.push({ id: i++, name: element })
+    );
     PLAYGROUND = {
       deck: deckFormatted,
       grave: [],
-      players: keepPlayers ? PLAYGROUND.players : [],
+      players: playersEmptied,
     };
     playersKicked = [];
     this.SHUFFLE();
@@ -107,7 +116,7 @@ module.exports = {
     // YOU CAN'T DRAW ANOTHER CARD IF YOU ALREADY HAVE
     if (player.revealedCards.length > 0) return;
 
-    takenFromGrave = fromGrave && PLAYGROUND.grave.length
+    takenFromGrave = fromGrave && PLAYGROUND.grave.length;
 
     if (takenFromGrave) {
       // take from grave
@@ -179,12 +188,12 @@ module.exports = {
 
   STEAL: function (playerID, card) {
     const player = getPlayerById(playerID);
-    const opponent = PLAYGROUND.players.find(p => p.hand.find(c => c.id == card.id));
+    const opponent = PLAYGROUND.players.find((p) =>
+      p.hand.find((c) => c.id == card.id)
+    );
     if (!(player && opponent)) return;
 
-    const notInterested = opponent.hand.find(
-      (c) => c.id == card.id
-    );
+    const notInterested = opponent.hand.find((c) => c.id == card.id);
 
     if (!notInterested) {
       // keep the card and give one of its hand
@@ -311,7 +320,7 @@ const extractCardValue = (card) => {
   if (!card.name || card.name.length < 2) return 15;
   if (card.name == 'KD' || card.name == 'KH') return 0;
   return card.name[0] == '1' && card.name[1] == '0' ? '10' : card.name[0];
-}
+};
 const convertValueToPoints = (value) => {
   const parsedValue = parseInt(value, 10);
   return isNaN(parsedValue) ? 15 : parsedValue;
