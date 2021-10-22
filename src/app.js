@@ -66,10 +66,7 @@ io.on('connection', (socket) => {
       if (ev.factor) socket.emit(ev.name, ev.factor);
       if (shouldPassTurn) next();
     } else {
-      socket.emit(
-        'warning',
-        "Il n'est pas possible de faire cette action maintenant"
-      );
+      socket.emit('warning', "Il n'est pas possible de faire cette action maintenant");
     }
     //io emits to all users
     io.emit('board', cm.GET());
@@ -94,13 +91,14 @@ io.on('connection', (socket) => {
         playerClaimingVictory = { id: socket.id, name: player.name };
         io.emit('warning', player.name + ' annonce sa présumée victoire !');
       } else {
-        socket.emit(
-          'warning',
-          playerClaimingVictory.name + ' a déjà annoncé avant toi !'
-        );
+        const message =
+          playerClaimingVictory.id == socket.id
+            ? 'Vous avez déjà annoncé votre victoire !'
+            : playerClaimingVictory.name + ' a déjà annoncé avant toi !';
+        socket.emit('warning', message);
       }
     } else {
-      socket.emit('warning', 'Une erreur est survenue :/');
+      socket.emit('warning', 'Une erreur est survenue, joueur inexistant :/');
     }
   });
 
@@ -108,9 +106,9 @@ io.on('connection', (socket) => {
     const player = cm.GETPLAYERBYID(socket.id);
     if (player != null) {
       if (playersRestart.includes(socket.id)) {
-        io.emit('warning', 'Vous avez déjà annoncé vouloir rejouer');
+        socket.emit('warning', 'Vous avez déjà annoncé vouloir rejouer');
       } else {
-        socket.emit('warning', playerClaimingVictory.name + ' veut rejouer !');
+        io.emit('warning', playerClaimingVictory.name + ' veut rejouer !');
         playersRestart.push(socket.id);
 
         if (playersRestart.length >= cm.GETNBPLAYERS()) {
@@ -120,7 +118,7 @@ io.on('connection', (socket) => {
         }
       }
     } else {
-      socket.emit('warning', 'Une erreur est survenue :/');
+      socket.emit('warning', 'Une erreur est survenue, joueur inexistant :/');
     }
   });
 
